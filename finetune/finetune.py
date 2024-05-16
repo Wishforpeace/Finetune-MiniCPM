@@ -2,18 +2,18 @@
 import json
 from dataclasses import dataclass, field
 from typing import Dict, Optional
-
+import os
 import torch
 import transformers
 from torch.utils.data import Dataset
 from transformers import (AutoModelForCausalLM, AutoTokenizer, Trainer,
                           TrainingArguments)
-
+import sys
 
 @dataclass
 class ModelArguments:
     model_name_or_path: Optional[str] = field(default="baichuan-inc/Baichuan2-7B-Base")
-
+    
 
 @dataclass
 class DataArguments:
@@ -38,6 +38,11 @@ class TrainingArguments(transformers.TrainingArguments):
         },
     )
     use_lora: bool = field(default=False)
+    fp32: bool = field(
+        default=False,
+        metadata={"help": "Whether to use fp32 (mixed) precision "},
+    )
+   
 
 
 class SupervisedDataset(Dataset):
@@ -124,12 +129,13 @@ def load_model_and_tokenizer(
     use_lora: bool = True,
     bf16: bool = False,
     fp16: bool = False,
+    fp32: bool = False,
 ):
     """load model and tokenizer"""
     tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
     tokenizer.pad_token = tokenizer.eos_token
 
-    assert not (bf16 and fp16), "bf16 or fp16, not both"
+    # assert not (bf16 and fp16), "bf16 or fp16, not both"
     if bf16:
         dtype = torch.bfloat16
     elif fp16:
@@ -167,12 +173,14 @@ if __name__ == "__main__":
         (ModelArguments, DataArguments, TrainingArguments)
     )
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
+   
     model, tokenizer = load_model_and_tokenizer(
         model_path=model_args.model_name_or_path,
         max_length=training_args.model_max_length,
         use_lora=training_args.use_lora,
         bf16=training_args.bf16,
-        fp16=training_args.fp16
+        fp16=training_args.fp16,
+        fp32=training_args.fp32,
     )
 
     train_dataset = SupervisedDataset(
@@ -180,6 +188,7 @@ if __name__ == "__main__":
         tokenizer=tokenizer,
         model_max_length=training_args.model_max_length,
     )
+    
     eval_dataset = SupervisedDataset(
         data_path=data_args.eval_data_path,
         tokenizer=tokenizer,
@@ -196,4 +205,10 @@ if __name__ == "__main__":
 
     trainer.train()
     # save the incremental PEFT weights, more details can be found in https://huggingface.co/blog/peft
-    # model.save_pretrained("output_dir") 
+    formatted_time = os.getenv('FORMATTED_TIME', 'default_time_if_not_set')
+    training_args.output_dir = f"output/cosmosqa/{formatted_time}/"
+    
+    model.save_pretrained(training_args.output_dir)
+    tokenizer.save_pretrained(training_args.output_dir)
+
+    

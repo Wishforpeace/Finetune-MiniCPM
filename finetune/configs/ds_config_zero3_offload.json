@@ -1,4 +1,7 @@
 {
+    "fp32":{
+        "enabled": false
+    },
     "fp16": {
         "enabled": "auto",
         "loss_scale": 0,
