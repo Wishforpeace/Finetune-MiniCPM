@@ -1,0 +1,1 @@
+python triviaqa_evaluation.py --dataset_file "/home/mnt/wyx/src/Finetune-MiniCPM/datasets/raw/triviaqa-rc/qa/verified-web-dev.json" --prediction_file "/home/mnt/wyx/src/Finetune-MiniCPM/datasets/processed/triviaqa-rc/verified-web-result.json"

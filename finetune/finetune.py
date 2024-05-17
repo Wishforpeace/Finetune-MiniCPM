@@ -10,6 +10,7 @@ from transformers import (AutoModelForCausalLM, AutoTokenizer, Trainer,
                           TrainingArguments)
 import sys
 
+os.environ['MASTER_PORT'] = '29501'
 @dataclass
 class ModelArguments:
     model_name_or_path: Optional[str] = field(default="baichuan-inc/Baichuan2-7B-Base")
@@ -206,7 +207,7 @@ if __name__ == "__main__":
     trainer.train()
     # save the incremental PEFT weights, more details can be found in https://huggingface.co/blog/peft
     formatted_time = os.getenv('FORMATTED_TIME', 'default_time_if_not_set')
-    training_args.output_dir = f"output/cosmosqa/{formatted_time}/"
+    training_args.output_dir = f"output/triviaqa/{formatted_time}/"
     
     model.save_pretrained(training_args.output_dir)
     tokenizer.save_pretrained(training_args.output_dir)
